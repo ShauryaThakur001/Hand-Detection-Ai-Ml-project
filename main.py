@@ -5,33 +5,36 @@ from mediapipe.tasks.python import vision
 import time
 
 # ---------------------------
-# Load Hand Landmarker Model
+# Load Hand Landmarker Model (VIDEO MODE = FAST
 # ---------------------------
 base_options = python.BaseOptions(model_asset_path="hand_landmarker.task")
 
 options = vision.HandLandmarkerOptions(
     base_options=base_options,
-    num_hands=1
+    num_hands=1,
+    running_mode=vision.RunningMode.VIDEO
 )
 
 detector = vision.HandLandmarker.create_from_options(options)
 
 # ---------------------------
-# Start Camera
+# Start Camera (Lower Resolution = Faster)
 # ---------------------------
 cap = cv2.VideoCapture(0)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
 # ---------------------------
 # State Variables
 # ---------------------------
-stable_frames_required = 8
+stable_frames_required = 6
 closed_counter = 0
 open_counter = 0
 prev_confirmed_state = "OPEN"
 
 screenshot_count = 0
 last_capture_time = 0
-cooldown = 2
+cooldown = 1.5
 animation_time = 0
 
 # ---------------------------
@@ -45,7 +48,9 @@ while True:
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
 
-    result = detector.detect(mp_image)
+    # FAST VIDEO DETECTION
+    timestamp = int(time.time() * 1000)
+    result = detector.detect_for_video(mp_image, timestamp)
 
     current_state = "OPEN"
 
@@ -61,7 +66,7 @@ while True:
                 landmarks.append((cx, cy))
                 cv2.circle(frame, (cx, cy), 4, (0, 255, 0), -1)
 
-            # Fingertip and lower joint indexes
+            # Finger tip and joint indexes
             tips = [8, 12, 16, 20]
             lower = [6, 10, 14, 18]
 
@@ -113,11 +118,11 @@ while True:
     prev_confirmed_state = confirmed_state
 
     # ---------------------------
-    # Shutter Animation
+    # Shutter Animation (Smooth)
     # ---------------------------
-    if time.time() - animation_time < 0.3:
+    if time.time() - animation_time < 0.25:
         h, w, _ = frame.shape
-        progress = (time.time() - animation_time) / 0.3
+        progress = (time.time() - animation_time) / 0.25
         bar_height = int(h * progress / 2)
 
         cv2.rectangle(frame, (0, 0), (w, bar_height), (0, 0, 0), -1)
@@ -130,7 +135,7 @@ while True:
                     (0, 255, 255),
                     3)
 
-    cv2.imshow("Gesture Screenshot", frame)
+    cv2.imshow("Gesture Screenshot (Fast)", frame)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
