@@ -5,7 +5,7 @@ from mediapipe.tasks.python import vision
 import time
 
 # ---------------------------
-# Load Hand Landmarker Model (VIDEO MODE = FAST)
+# Load Hand Landmarker Model (VIDEO MODE = FAST
 # ---------------------------
 base_options = python.BaseOptions(model_asset_path="hand_landmarker.task")
 
